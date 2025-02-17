@@ -1,0 +1,9 @@
+fanskid_id,date_column,performance_metric,other_metric
+fanskid_001,2024-01-01,85,100
+fanskid_001,2024-01-02,92,105
+fanskid_002,2024-01-01,78,95
+fanskid_002,2024-01-02,80,98
+fanskid_001,2024-01-03,88,102
+fanskid_002,2024-01-03,82,101
+fanskid_003,2024-01-01,90,110
+fanskid_003,2024-01-02,95,112

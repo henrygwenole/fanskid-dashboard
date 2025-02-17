@@ -45,7 +45,7 @@ def load_fanskid_data(data_path):  # Path to your data
         return None
 
 # --- Load your data ---
-DATA_PATH = "path/to/your/fanskid_data.csv" # Replace with the actual path
+DATA_PATH = "fanskid_data.csv"  # Now points to the file in the same directory
 fanskid_df = load_fanskid_data(DATA_PATH)
 
 if fanskid_df is None: # Exit if data loading failed
