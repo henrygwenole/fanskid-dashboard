@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
-import plotly.graph_objects as go  # For interactive charts
+import plotly.graph_objects as go
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="Fanskid Monitoring Dashboard",  # Your title
-    page_icon=":bar_chart:",  # Your icon
+    page_title="Fanskid Monitoring Dashboard",
+    page_icon=":bar_chart:",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -18,87 +18,66 @@ except FileNotFoundError:
     st.warning("style.css not found. Using default Streamlit styling.")
 
 # --- Data Loading ---
-@st.cache_data  # Cache the data for efficiency
-def load_fanskid_data(data_path):  # Path to your data
+@st.cache_data
+def load_fanskid_data(data_path):
     """Loads and preprocesses fanskid monitoring data."""
     try:
-        df = pd.read_csv(data_path)  # Adjust for your data format (CSV, Excel, etc.)
-        # --- Data Preprocessing (Important!) ---
-        # 1. Convert date/time columns:
+        df = pd.read_csv(data_path)
+        # --- Data Preprocessing (Crucial!) ---
         for col in df.columns:
-            if 'date' in col.lower() or 'time' in col.lower(): # Identify potential date columns
+            if 'date' in col.lower() or 'time' in col.lower():
                 try:
-                    df[col] = pd.to_datetime(df[col]) # Try to convert to datetime
-                except:
-                    st.warning(f"Could not convert column '{col}' to datetime.")
-        # 2. Add any calculated columns (e.g., derived metrics):
-        # Example: df['efficiency'] = df['output'] / df['input']
-        # 3. Handle missing values if needed:
-        # df.fillna(0, inplace=True)  # Example: Fill with 0
-        # df.dropna(inplace=True)    # Example: Remove rows with missing data
+                    df[col] = pd.to_datetime(df[col], errors='coerce')
+                except Exception as e:
+                    st.warning(f"Could not convert column '{col}' to datetime: {e}")
         return df
     except FileNotFoundError:
         st.error(f"Data file not found at {data_path}")
-        return None  # Return None if file not found
-    except Exception as e: # Catch other potential errors
+        return None
+    except Exception as e:
         st.error(f"An error occurred during data loading: {e}")
         return None
 
 # --- Load your data ---
-DATA_PATH = "fanskid_data.csv"  # Now points to the file in the same directory
+DATA_PATH = "fanskid_data.csv" # Or the actual path to your CSV
 fanskid_df = load_fanskid_data(DATA_PATH)
 
-if fanskid_df is None: # Exit if data loading failed
+if fanskid_df is None:
     st.stop()
 
 # --- Sidebar ---
 st.sidebar.header("Fanskid Monitoring")
 
-# Add your sidebar filters and controls here
-# Example:
-selected_fanskids = st.sidebar.multiselect("Select Fanskids", fanskid_df['fanskid_id'].unique())
-date_range = st.sidebar.date_input("Date Range", value=(fanskid_df['date_column'].min(), fanskid_df['date_column'].max())) # Replace 'date_column'
+# Example filters (adapt to your data)
+if 'fanskid_id' in fanskid_df.columns: # Check if the column exists
+    selected_fanskids = st.sidebar.multiselect("Select Fanskids", fanskid_df['fanskid_id'].unique())
+else:
+    st.warning("Column 'fanskid_id' not found in data.")
+    selected_fanskids = # Initialize to empty list
 
+if 'date_column' in fanskid_df.columns:
+    date_range = st.sidebar.date_input("Date Range", value=(fanskid_df['date_column'].min(), fanskid_df['date_column'].max()))
+else:
+    st.warning("Column 'date_column' not found in data.")
+    date_range = None
 
 # --- Main Content ---
 st.title("Fanskid Monitoring Dashboard")
 
-# Filter data based on sidebar selections
-filtered_df = fanskid_df.copy() # Make a copy to avoid SettingWithCopyWarning
-if selected_fanskids:
+# Filter data (handle missing columns)
+filtered_df = fanskid_df.copy()
+if selected_fanskids and 'fanskid_id' in filtered_df.columns:
     filtered_df = filtered_df[filtered_df['fanskid_id'].isin(selected_fanskids)]
-if date_range:
-    filtered_df = filtered_df[(filtered_df['date_column'] >= date_range[0]) & (filtered_df['date_column'] <= date_range[1])] # Replace 'date_column'
+if date_range and 'date_column' in filtered_df.columns:
+    filtered_df = filtered_df[(filtered_df['date_column'] >= date_range) & (filtered_df['date_column'] <= date_range)]
 
-# --- Charts and Metrics ---
-# Example Chart 1: Fanskid Performance Over Time (Plotly)
+# --- Charts and Metrics (handle missing data) ---
+# Example Chart: Fanskid Performance Over Time
 st.header("Fanskid Performance")
-if not filtered_df.empty:
+
+if not filtered_df.empty and 'date_column' in filtered_df.columns and 'performance_metric' in filtered_df.columns:
     fig = go.Figure()
-    for fanskid in selected_fanskids: # Or however you want to group your data
+    for fanskid in selected_fanskids:
         fanskid_data = filtered_df[filtered_df['fanskid_id'] == fanskid]
         fig.add_trace(go.Scatter(
-            x=fanskid_data['date_column'],  # Replace with your date/time column
-            y=fanskid_data['performance_metric'], # Replace with your performance metric
-            mode='lines',
-            name=fanskid,
-            connectgaps=True
-        ))
-    fig.update_layout(title="Fanskid Performance Over Time", xaxis_title="Time", yaxis_title="Performance")
-    st.plotly_chart(fig, use_container_width=True)
-else:
-    st.info("No data available for the selected criteria.")
-
-# Example Metric 1: Average Performance
-st.header("Key Metrics")
-if not filtered_df.empty:
-    avg_performance = filtered_df['performance_metric'].mean()
-    st.metric("Average Performance", f"{avg_performance:.2f}")
-else:
-    st.info("No data available for the selected criteria.")
-
-# Add more charts and metrics as needed
-
-# --- Data Table (Optional) ---
-if st.checkbox("Show Data Table"):
-    st.dataframe(filtered_df)
+            x=fanskid_data['date_column
