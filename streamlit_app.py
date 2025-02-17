@@ -42,10 +42,14 @@ def show_device_dashboard():
         color = get_status_color(avg_value)
         col = [col1, col2, col3][i % 3]
         
-        if col.button(device, key=device):
+        if col.button(f" ", key=device, help=device):
             st.session_state.selected_device = device
             st.rerun()
-        col.markdown(f'<div style="background-color:{color}; padding:10px; border-radius:5px; text-align:center; font-weight:bold;">{device}</div>', unsafe_allow_html=True)
+        
+        col.markdown(
+            f'<div style="background-color:{color}; padding:10px; border-radius:5px; text-align:center; font-weight:bold; cursor:pointer;" onclick="window.location.reload();">{device}</div>', 
+            unsafe_allow_html=True
+        )
 
 def show_device_data(device_name):
     st.title(f"Live Data - {device_name}")
