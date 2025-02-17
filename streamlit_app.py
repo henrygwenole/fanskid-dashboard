@@ -1,151 +1,104 @@
 import streamlit as st
 import pandas as pd
-import math
-from pathlib import Path
+import plotly.graph_objects as go  # For interactive charts
 
-# Set the title and favicon that appear in the Browser's tab bar.
+# --- Page Configuration ---
 st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
+    page_title="Fanskid Monitoring Dashboard",  # Your title
+    page_icon=":bar_chart:",  # Your icon
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
+# --- CSS Loading ---
+try:
+    with open('style.css', 'r') as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+except FileNotFoundError:
+    st.warning("style.css not found. Using default Streamlit styling.")
 
-@st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+# --- Data Loading ---
+@st.cache_data  # Cache the data for efficiency
+def load_fanskid_data(data_path):  # Path to your data
+    """Loads and preprocesses fanskid monitoring data."""
+    try:
+        df = pd.read_csv(data_path)  # Adjust for your data format (CSV, Excel, etc.)
+        # --- Data Preprocessing (Important!) ---
+        # 1. Convert date/time columns:
+        for col in df.columns:
+            if 'date' in col.lower() or 'time' in col.lower(): # Identify potential date columns
+                try:
+                    df[col] = pd.to_datetime(df[col]) # Try to convert to datetime
+                except:
+                    st.warning(f"Could not convert column '{col}' to datetime.")
+        # 2. Add any calculated columns (e.g., derived metrics):
+        # Example: df['efficiency'] = df['output'] / df['input']
+        # 3. Handle missing values if needed:
+        # df.fillna(0, inplace=True)  # Example: Fill with 0
+        # df.dropna(inplace=True)    # Example: Remove rows with missing data
+        return df
+    except FileNotFoundError:
+        st.error(f"Data file not found at {data_path}")
+        return None  # Return None if file not found
+    except Exception as e: # Catch other potential errors
+        st.error(f"An error occurred during data loading: {e}")
+        return None
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
+# --- Load your data ---
+DATA_PATH = "path/to/your/fanskid_data.csv" # Replace with the actual path
+fanskid_df = load_fanskid_data(DATA_PATH)
 
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
+if fanskid_df is None: # Exit if data loading failed
+    st.stop()
 
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
+# --- Sidebar ---
+st.sidebar.header("Fanskid Monitoring")
 
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
-
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
-
-    return gdp_df
-
-gdp_df = get_gdp_data()
-
-# -----------------------------------------------------------------------------
-# Draw the actual page
-
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
-
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
-
-# Add some spacing
-''
-''
-
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
+# Add your sidebar filters and controls here
+# Example:
+selected_fanskids = st.sidebar.multiselect("Select Fanskids", fanskid_df['fanskid_id'].unique())
+date_range = st.sidebar.date_input("Date Range", value=(fanskid_df['date_column'].min(), fanskid_df['date_column'].max())) # Replace 'date_column'
 
 
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
+# --- Main Content ---
+st.title("Fanskid Monitoring Dashboard")
 
-st.header(f'GDP in {to_year}', divider='gray')
+# Filter data based on sidebar selections
+filtered_df = fanskid_df.copy() # Make a copy to avoid SettingWithCopyWarning
+if selected_fanskids:
+    filtered_df = filtered_df[filtered_df['fanskid_id'].isin(selected_fanskids)]
+if date_range:
+    filtered_df = filtered_df[(filtered_df['date_column'] >= date_range[0]) & (filtered_df['date_column'] <= date_range[1])] # Replace 'date_column'
 
-''
+# --- Charts and Metrics ---
+# Example Chart 1: Fanskid Performance Over Time (Plotly)
+st.header("Fanskid Performance")
+if not filtered_df.empty:
+    fig = go.Figure()
+    for fanskid in selected_fanskids: # Or however you want to group your data
+        fanskid_data = filtered_df[filtered_df['fanskid_id'] == fanskid]
+        fig.add_trace(go.Scatter(
+            x=fanskid_data['date_column'],  # Replace with your date/time column
+            y=fanskid_data['performance_metric'], # Replace with your performance metric
+            mode='lines',
+            name=fanskid,
+            connectgaps=True
+        ))
+    fig.update_layout(title="Fanskid Performance Over Time", xaxis_title="Time", yaxis_title="Performance")
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.info("No data available for the selected criteria.")
 
-cols = st.columns(4)
+# Example Metric 1: Average Performance
+st.header("Key Metrics")
+if not filtered_df.empty:
+    avg_performance = filtered_df['performance_metric'].mean()
+    st.metric("Average Performance", f"{avg_performance:.2f}")
+else:
+    st.info("No data available for the selected criteria.")
 
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
+# Add more charts and metrics as needed
 
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
-
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+# --- Data Table (Optional) ---
+if st.checkbox("Show Data Table"):
+    st.dataframe(filtered_df)
