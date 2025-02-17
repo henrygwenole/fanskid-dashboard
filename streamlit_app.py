@@ -7,28 +7,59 @@ from datetime import datetime, timedelta
 # --- Data Generation Function ---
 def generate_live_data(num_records=100):
     data = {
-        'fanskid_id': ['FSK-001' for _ in range(num_records)],
-        'value': [random.uniform(20, 100) for _ in range(num_records)],
-        'date_column': [datetime.now() - timedelta(minutes=i) for i in range(num_records)]
+        'timestamp': [datetime.now() - timedelta(minutes=i) for i in range(num_records)],
+        'Driven Drive End Bearing': [random.uniform(20, 100) for _ in range(num_records)],
+        'Driven non Drive End Bearing': [random.uniform(20, 100) for _ in range(num_records)],
+        'Motor Drive End Bearing': [random.uniform(20, 100) for _ in range(num_records)],
+        'Motor non Drive End Bearing': [random.uniform(20, 100) for _ in range(num_records)],
+        'Driving belt alignment': [random.uniform(20, 100) for _ in range(num_records)],
     }
     return pd.DataFrame(data)
 
-# --- Sidebar ---
-st.sidebar.header("Fanskid Monitoring")
-refresh_interval = st.sidebar.slider("Refresh Interval (seconds)", 1, 60, 10)
+# --- Helper Function for Status Color ---
+def get_status_color(value):
+    if value < 40:
+        return "green"
+    elif value < 70:
+        return "orange"
+    else:
+        return "red"
 
-fanskid_df = generate_live_data()
-date_range = st.sidebar.date_input("Date Range", value=(fanskid_df['date_column'].min(), fanskid_df['date_column'].max()))
+# --- Main App ---
+st.set_page_config(page_title="Fanskid Monitoring Dashboard", layout="wide")
 
-# --- Main Content ---
-st.title("Fanskid Monitoring Dashboard")
+if "selected_device" not in st.session_state:
+    st.session_state.selected_device = None
 
-filtered_df = fanskid_df
-if date_range:
-    filtered_df = filtered_df[(filtered_df['date_column'].dt.date >= date_range[0]) & (filtered_df['date_column'].dt.date <= date_range[1])]
+data = generate_live_data()
 
-fig = go.Figure(data=[go.Scatter(x=filtered_df['date_column'], y=filtered_df['value'], mode='lines+markers')])
-st.plotly_chart(fig)
+def show_device_dashboard():
+    st.title("Fanskid Monitoring Dashboard")
+    col1, col2, col3 = st.columns(3)
+    
+    for i, device in enumerate(data.columns[1:]):
+        avg_value = data[device].mean()
+        color = get_status_color(avg_value)
+        col = [col1, col2, col3][i % 3]
+        
+        if col.button(f"{device} ({color.upper()})", key=device):
+            st.session_state.selected_device = device
+            st.rerun()
 
-st.dataframe(filtered_df)
-st.button("Refresh Data", on_click=st.experimental_rerun)
+def show_device_data(device_name):
+    st.title(f"Live Data - {device_name}")
+    
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=data['timestamp'], y=data[device_name], mode='lines+markers', name=device_name))
+    
+    st.plotly_chart(fig)
+    st.dataframe(data[['timestamp', device_name]])
+    
+    if st.button("Back to Dashboard"):
+        st.session_state.selected_device = None
+        st.rerun()
+
+if st.session_state.selected_device:
+    show_device_data(st.session_state.selected_device)
+else:
+    show_device_dashboard()
