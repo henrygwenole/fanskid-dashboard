@@ -48,9 +48,12 @@ def show_device_dashboard():
                 st.rerun()
             
             st.markdown(
-                f'<div style="display: flex; flex-direction: column; align-items: center; background-color:{color}; padding:10px; border-radius:5px; text-align:center; font-weight:bold; cursor:pointer;">
+                f"""
+                <div style="display: flex; flex-direction: column; align-items: center; background-color:{color}; 
+                padding:10px; border-radius:5px; text-align:center; font-weight:bold; cursor:pointer;">
                     {icon} {device}
-                </div>',
+                </div>
+                """,
                 unsafe_allow_html=True
             )
 
