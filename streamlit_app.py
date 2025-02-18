@@ -23,6 +23,13 @@ st.set_page_config(page_title="Fanskid Monitoring Dashboard", layout="wide")
 if "selected_device" not in st.session_state:
     st.session_state.selected_device = None
 
+# Motor and belt drive details
+MOTOR_SPEED = 2952  # rpm
+FAN_SPEED = 2000  # rpm
+DRIVER_DIA = 160  # mm
+DRIVEN_DIA = 236  # mm
+BELT_FREQ = (MOTOR_SPEED / 60) * (DRIVER_DIA / DRIVEN_DIA)  # Hz
+
 def get_status(device):
     return ("#E74C3C", "❌") if device == "Driving belt alignment" else ("#2ECC71", "✔️")
 
@@ -49,7 +56,12 @@ def show_dashboard():
 def show_data(device_name):
     st.title(f"Live Data - {device_name}")
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=data['timestamp'], y=data[device_name], mode='lines+markers'))
+    fig.add_trace(go.Scatter(x=data['timestamp'], y=data[device_name], mode='lines+markers', name=device_name))
+    if device_name == "Driving belt alignment":
+        frequencies = [Belt_FREQ, MOTOR_SPEED / 60, FAN_SPEED / 60, 50]  # Belt, Shaft, Fan, Line Frequencies
+        for freq in frequencies:
+            fig.add_shape(type='line', x0=min(data['timestamp']), x1=max(data['timestamp']), y0=freq, y1=freq,
+                          line=dict(color='red', dash='dot'))
     st.plotly_chart(fig)
     st.dataframe(data[['timestamp', device_name]])
     if st.button("Back to Dashboard"):
