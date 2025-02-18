@@ -45,11 +45,7 @@ def show_device_dashboard():
         col = [col1, col2, col3][i % 3]
 
         with col:
-            button_style = f"background-color:{color}; color:white; font-weight:bold; padding:10px; width:100%; border-radius:5px; border:none; cursor:pointer;"
-            if st.markdown(
-                f'<button style="{button_style}" onclick="window.location.reload();">{icon} {device}</button>',
-                unsafe_allow_html=True
-            ):
+            if st.button(f"{icon} {device}", key=device, help=device):
                 st.session_state.selected_device = device
                 st.rerun()
 
