@@ -30,17 +30,21 @@ def show_dashboard():
     st.title("Fanskid Monitoring Dashboard")
     for device in data.columns[1:]:
         color, icon = get_status(device)
-        col1, col2 = st.columns([0.9, 0.1])
+        col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
         with col1:
             st.markdown(
                 f'<div style="background-color:{color}; padding:15px; border-radius:5px; color:white; font-weight:bold;">{icon} {device}</div>',
                 unsafe_allow_html=True
             )
         with col2:
-            st.image("assets/icons/data_icon.png", width=30)
-            if st.button("View Data", key=device):
+            st.image("assets/icons/data_icon.svg", width=30)
+            if st.button("View Data", key=f"data_{device}"):
                 st.session_state.selected_device = device
                 st.rerun()
+        with col3:
+            st.image("assets/icons/maintenance_icon.svg", width=30)
+            if st.button("Maintenance", key=f"maint_{device}"):
+                st.markdown(f"[Maintenance Instructions](#)")  # Placeholder link
 
 def show_data(device_name):
     st.title(f"Live Data - {device_name}")
