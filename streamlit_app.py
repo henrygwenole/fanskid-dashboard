@@ -16,14 +16,14 @@ def generate_live_data(num_records=100):
     }
     return pd.DataFrame(data)
 
-# --- Helper Function for Status Color ---
-def get_status_color(value):
+# --- Helper Function for Status Color and Icon ---
+def get_status(value):
     if value < 40:
-        return "#2ECC71"  # Green
+        return "#2ECC71", "✔️"  # Green, Checkmark
     elif value < 70:
-        return "#F39C12"  # Orange
+        return "#F39C12", "⚠️"  # Orange, Warning
     else:
-        return "#E74C3C"  # Red
+        return "#E74C3C", "❌"  # Red, Cross
 
 # --- Main App ---
 st.set_page_config(page_title="Fanskid Monitoring Dashboard", layout="wide")
@@ -39,19 +39,20 @@ def show_device_dashboard():
     
     for i, device in enumerate(data.columns[1:]):
         avg_value = data[device].mean()
-        color = get_status_color(avg_value)
+        color, icon = get_status(avg_value)
         col = [col1, col2, col3][i % 3]
 
-        with col:  # Use 'with col:' for better layout management
+        with col:
             if st.button(f" ", key=device, help=device):
                 st.session_state.selected_device = device
                 st.rerun()
-
+            
             st.markdown(
-                f'<div style="display: flex; flex-direction: column; align-items: center; background-color:{color}; padding:10px; border-radius:5px; text-align:center; font-weight:bold; cursor:pointer;" onclick="window.location.reload();">{device}</div>',
+                f'<div style="display: flex; flex-direction: column; align-items: center; background-color:{color}; padding:10px; border-radius:5px; text-align:center; font-weight:bold; cursor:pointer;">
+                    {icon} {device}
+                </div>',
                 unsafe_allow_html=True
             )
-
 
 def show_device_data(device_name):
     st.title(f"Live Data - {device_name}")
