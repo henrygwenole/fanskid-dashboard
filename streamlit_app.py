@@ -58,7 +58,7 @@ def show_data(device_name):
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=data['timestamp'], y=data[device_name], mode='lines+markers', name=device_name))
     if device_name == "Driving belt alignment":
-        frequencies = [Belt_FREQ, MOTOR_SPEED / 60, FAN_SPEED / 60, 50]  # Belt, Shaft, Fan, Line Frequencies
+        frequencies = [BELT_FREQ, MOTOR_SPEED / 60, FAN_SPEED / 60, 50]  # Belt, Shaft, Fan, Line Frequencies
         for freq in frequencies:
             fig.add_shape(type='line', x0=min(data['timestamp']), x1=max(data['timestamp']), y0=freq, y1=freq,
                           line=dict(color='red', dash='dot'))
