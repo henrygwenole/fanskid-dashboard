@@ -17,8 +17,10 @@ def generate_live_data(num_records=100):
     return pd.DataFrame(data)
 
 # --- Helper Function for Status Color and Icon ---
-def get_status(value):
-    if value < 40:
+def get_status(value, device):
+    if device == "Driving belt alignment":
+        return "#E74C3C", "❌"  # Always Red for Fault
+    elif value < 40:
         return "#2ECC71", "✔️"  # Green, Checkmark
     elif value < 70:
         return "#F39C12", "⚠️"  # Orange, Warning
@@ -39,11 +41,11 @@ def show_device_dashboard():
     
     for i, device in enumerate(data.columns[1:]):
         avg_value = data[device].mean()
-        color, icon = get_status(avg_value)
+        color, icon = get_status(avg_value, device)
         col = [col1, col2, col3][i % 3]
 
         with col:
-            if st.button(f" ", key=device, help=device):
+            if st.button(f"{icon} {device}", key=device, help=device):
                 st.session_state.selected_device = device
                 st.rerun()
             
