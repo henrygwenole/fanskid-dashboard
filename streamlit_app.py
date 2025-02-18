@@ -45,19 +45,13 @@ def show_device_dashboard():
         col = [col1, col2, col3][i % 3]
 
         with col:
-            if st.button(f"{icon} {device}", key=device, help=device):
+            button_style = f"background-color:{color}; color:white; font-weight:bold; padding:10px; width:100%; border-radius:5px; border:none; cursor:pointer;"
+            if st.markdown(
+                f'<button style="{button_style}" onclick="window.location.reload();">{icon} {device}</button>',
+                unsafe_allow_html=True
+            ):
                 st.session_state.selected_device = device
                 st.rerun()
-            
-            st.markdown(
-                f"""
-                <div style="display: flex; flex-direction: column; align-items: center; background-color:{color}; 
-                padding:10px; border-radius:5px; text-align:center; font-weight:bold; cursor:pointer;">
-                    {icon} {device}
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
 
 def show_device_data(device_name):
     st.title(f"Live Data - {device_name}")
