@@ -22,13 +22,13 @@ def load_real_data(file_path):
         st.error(f"Error: File {file_path} not found.")
         return pd.DataFrame(columns=["reading", "bearing_block", "driven_pulley"])
 
-# Generate synthetic data (improved for longer durations)
+# Generate synthetic data
 def generate_synthetic_data(real_data, desired_duration_minutes=60, sampling_rate=SAMPLING_RATE):
     if real_data.empty or "driven_pulley" not in real_data.columns:
         st.warning("Real data is missing or doesn't contain 'driven_pulley'. Using default synthetic data.")
         num_records = int(desired_duration_minutes * 60 * sampling_rate)
         time_intervals = np.linspace(0, desired_duration_minutes * 60, num_records)
-        synthetic_signal = np.sin(2 * np.pi * SIGNAL_FREQUENCY * time_intervals) + np.random.normal(0, 0.5, num_records)  # Keep some noise
+        synthetic_signal = np.sin(2 * np.pi * SIGNAL_FREQUENCY * time_intervals) + np.random.normal(0, 0.5, num_records)
         start_time = datetime.now() - timedelta(minutes=desired_duration_minutes)
         timestamps = [start_time + timedelta(seconds=i / sampling_rate) for i in range(num_records)]
         return pd.DataFrame({'timestamp': timestamps, 'Driving belt alignment': synthetic_signal})
@@ -38,13 +38,7 @@ def generate_synthetic_data(real_data, desired_duration_minutes=60, sampling_rat
 
     num_records = int(desired_duration_minutes * 60 * sampling_rate)
     time_intervals = np.linspace(0, desired_duration_minutes * 60, num_records)
-
-    # Improved Signal Generation:
-    synthetic_signal = np.sin(2 * np.pi * SIGNAL_FREQUENCY * time_intervals) * std_real + mean_real
-
-    # Add noise only if duration is short (1 or 2 minutes)
-    if desired_duration_minutes <= 2:  # Add noise only for short durations
-        synthetic_signal += np.random.normal(0, std_real * 0.2, num_records) # Adding Noise
+    synthetic_signal = np.sin(2 * np.pi * SIGNAL_FREQUENCY * time_intervals) * std_real + mean_real + np.random.normal(0, std_real * 0.2, num_records)
 
     start_time = datetime.now() - timedelta(minutes=desired_duration_minutes)
     timestamps = [start_time + timedelta(seconds=i / sampling_rate) for i in range(num_records)]
