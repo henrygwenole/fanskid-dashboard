@@ -6,10 +6,14 @@ import random
 from datetime import datetime, timedelta
 from scipy.fftpack import fft, fftfreq
 
-# Load real data from the uploaded file
+# Load real data from the specified file path
 def load_real_data(file_path):
-    df = pd.read_csv(file_path, sep="\t", header=None, names=["reading", "bearing_block", "driven_pulley"])
-    return df[["reading", "bearing_block", "driven_pulley"]]
+    try:
+        df = pd.read_csv(file_path, sep="\t", header=None, names=["reading", "bearing_block", "driven_pulley"])
+        return df[["reading", "bearing_block", "driven_pulley"]]
+    except FileNotFoundError:
+        st.error(f"Error: File {file_path} not found.")
+        return pd.DataFrame(columns=["reading", "bearing_block", "driven_pulley"])
 
 # Synthetic Data Generation based on Real Data Statistics
 def generate_synthetic_data(real_data, num_records=100, sampling_rate=100):
@@ -24,9 +28,9 @@ def generate_synthetic_data(real_data, num_records=100, sampling_rate=100):
     })
 
 # Load real dataset
-data_file = "/data/Data 150-F-0/51.txt"  # Path to uploaded file
+data_file = "/data/Data 150-F-0/51.txt"  # Updated file path
 real_data = load_real_data(data_file)
-synthetic_data = generate_synthetic_data(real_data["driven_pulley"])
+synthetic_data = generate_synthetic_data(real_data["driven_pulley"]) if not real_data.empty else pd.DataFrame()
 
 st.set_page_config(page_title="Fanskid Monitoring Dashboard", layout="wide")
 
@@ -60,6 +64,10 @@ def show_dashboard():
 
 def show_data():
     st.title("Live Data - Driving Belt Alignment")
+    
+    if synthetic_data.empty:
+        st.error("No data available for visualization.")
+        return
     
     # Time-domain plot
     fig_time = go.Figure()
