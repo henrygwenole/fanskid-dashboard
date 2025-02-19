@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from scipy.fftpack import fft, fftfreq
 
 # Configuration
-DATA_FILE = "data/Data 150-F-0/51.txt"  # Replace with your actual file path
+DATA_FILE = "data/Data 150-F-0/51.txt"  # **REPLACE WITH YOUR ACTUAL FILE PATH**
 SAMPLING_RATE = 100  # Hz
 SYNTHETIC_DATA_POINTS = 200
 SIGNAL_FREQUENCY = 50  # Hz
@@ -37,14 +37,18 @@ def generate_synthetic_data(real_data, num_records=SYNTHETIC_DATA_POINTS, sampli
     synthetic_signal = np.sin(2 * np.pi * SIGNAL_FREQUENCY * time_intervals) * std_real + mean_real + np.random.normal(0, std_real * 0.2, num_records)
     return pd.DataFrame({'timestamp': [datetime.now() - timedelta(seconds=i) for i in range(num_records)], 'Driving belt alignment': synthetic_signal})
 
-# FFT computation
+# FFT computation (Corrected)
 def compute_fft(signal, sampling_rate=SAMPLING_RATE):
     if signal.empty:
         return np.array([]), np.array([])
-    num_samples = len(signal)
+
+    signal_np = signal.to_numpy()  # Convert to NumPy array
+
+    num_samples = len(signal_np)
     freq_values = fftfreq(num_samples, d=1/sampling_rate)[:num_samples//2]
-    fft_values = np.abs(fft(signal))[:num_samples//2]
+    fft_values = np.abs(fft(signal_np))[:num_samples//2]
     return freq_values, fft_values
+
 
 # Load data
 real_data = load_real_data(DATA_FILE)
@@ -66,13 +70,12 @@ def show_dashboard():
             unsafe_allow_html=True
         )
     with col2:
-        # You'll need to place your actual image files in a directory accessible to Streamlit.
-        st.image("assets/icons/data_icon.svg", width=30)  # Make sure the path is correct
+        st.image("assets/icons/data_icon.svg", width=30)  # **CHECK IMAGE PATH**
         if st.button("View Data", key="data_belt"):
             st.session_state.selected_device = "Driving belt alignment"
             st.rerun()
     with col3:
-        st.image("assets/icons/maintenance_icon.svg", width=30) # Make sure the path is correct
+        st.image("assets/icons/maintenance_icon.svg", width=30) # **CHECK IMAGE PATH**
         if st.button("Maintenance", key="maint_belt"):
             st.markdown(f"[Maintenance Instructions](#)")  # Placeholder link
 
