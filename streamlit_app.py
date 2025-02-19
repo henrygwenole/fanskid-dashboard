@@ -4,7 +4,6 @@ import plotly.graph_objects as go
 import numpy as np
 from datetime import datetime, timedelta
 from scipy.fftpack import fft, fftfreq
-import time
 
 # Configuration
 DATA_FILE = "data/Data 150-F-0/51.txt"  # **REPLACE WITH YOUR ACTUAL FILE PATH**
@@ -88,42 +87,39 @@ def show_data():
         st.error("No data available for visualization.")
         return
 
-    # Placeholders for dynamic plotting
-    time_domain_placeholder = st.empty()
-    freq_domain_placeholder = st.empty()
-    data_table_placeholder = st.empty()
+    # Time Range Selection
+    time_range = st.selectbox("Select Time Range", ["Last 10 min", "Last 30 min", "Last 1 hour", "Last 24 hours"])
 
-    # Pause/Play state
-    if "paused" not in st.session_state:
-        st.session_state.paused = False
+    now = datetime.now()
+    if time_range == "Last 10 min":
+        time_limit = now - timedelta(minutes=10)
+    elif time_range == "Last 30 min":
+        time_limit = now - timedelta(minutes=30)
+    elif time_range == "Last 1 hour":
+        time_limit = now - timedelta(hours=1)
+    elif time_range == "Last 24 hours":
+        time_limit = now - timedelta(hours=24)
 
-    if st.button("Pause" if not st.session_state.paused else "Play"):
-        st.session_state.paused = not st.session_state.paused
+    filtered_data = synthetic_data[synthetic_data['timestamp'] >= time_limit]
 
-    for i in range(1, len(synthetic_data) + 1):
-        if not st.session_state.paused:
-            current_data = synthetic_data[:i]
+    if filtered_data.empty:
+        st.warning(f"No data available for the selected time range ({time_range}).")
+        return
 
-            # Time-domain plot
-            fig_time = go.Figure()
-            fig_time.add_trace(go.Scatter(x=current_data['timestamp'], y=current_data['Driving belt alignment'], mode='lines', name='Synthetic Data'))
-            time_domain_placeholder.plotly_chart(fig_time)
+    # Time-domain plot
+    fig_time = go.Figure()
+    fig_time.add_trace(go.Scatter(x=filtered_data['timestamp'], y=filtered_data['Driving belt alignment'], mode='lines', name='Synthetic Data'))
+    st.plotly_chart(fig_time)
 
-            # Frequency-domain analysis (Only Synthetic Data)
-            freq_values, fft_values = compute_fft(current_data['Driving belt alignment'])
-            fig_freq = go.Figure()
-            if freq_values.size > 0 and fft_values.size > 0:
-                fig_freq.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='Synthetic Data (Faulty)', line=dict(color='red')))
-            fig_freq.update_layout(title="Frequency Domain Analysis", xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
-            freq_domain_placeholder.plotly_chart(fig_freq)
+    # Frequency-domain analysis (using filtered data)
+    freq_values, fft_values = compute_fft(filtered_data['Driving belt alignment'])
+    fig_freq = go.Figure()
+    if freq_values.size > 0 and fft_values.size > 0:
+        fig_freq.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='Synthetic Data (Faulty)', line=dict(color='red')))
+    fig_freq.update_layout(title="Frequency Domain Analysis", xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
+    st.plotly_chart(fig_freq)
 
-            # Data Table
-            data_table_placeholder.dataframe(current_data[['timestamp', 'Driving belt alignment']])
-
-            time.sleep(0.1)  # Simulate a 100ms delay (adjust as needed)
-
-        else:
-            time.sleep(0.05)  # Small sleep while paused
+    st.dataframe(filtered_data[['timestamp', 'Driving belt alignment']])
 
     if st.button("Back to Dashboard"):
         st.session_state.selected_device = None
