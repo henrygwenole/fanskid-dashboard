@@ -21,6 +21,10 @@ def load_real_data(file_path):
     except FileNotFoundError:
         st.error(f"Error: File {file_path} not found.")
         return pd.DataFrame(columns=["reading", "bearing_block", "driven_pulley"])
+    except Exception as e:  # Catch other potential errors
+        st.error(f"An error occurred while loading data: {e}")
+        return pd.DataFrame(columns=["reading", "bearing_block", "driven_pulley"])
+
 
 # 2. Generate Synthetic Data (Use real data statistics)
 def generate_synthetic_data(real_data, desired_duration_minutes=60, sampling_rate=SAMPLING_RATE):
@@ -51,13 +55,14 @@ def generate_synthetic_data(real_data, desired_duration_minutes=60, sampling_rat
 def compute_fft(signal, sample_rate=10000):  # Use correct sample rate here as well
     N = len(signal)
     T = 1 / sample_rate
-    
+
     # Scale the signal (important for vibration data)
     scaled_signal = signal / np.max(np.abs(signal))  # Scale to -1 to 1
 
     yf = np.fft.fft(scaled_signal)
     xf = np.fft.fftfreq(N, T)[:N // 2]
     return xf, np.abs(yf[:N // 2])
+
 
 # Streamlit app
 st.set_page_config(page_title="Fanskid Monitoring Dashboard", layout="wide")
@@ -66,6 +71,7 @@ if "selected_device" not in st.session_state:
     st.session_state.selected_device = None
 
 def show_dashboard():
+    # ... (Dashboard code remains the same)
     st.title("Fanskid Monitoring Dashboard")
     col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
 
@@ -88,11 +94,14 @@ def show_dashboard():
 def show_data():
     st.title("Live Data - Driving Belt Alignment")
 
-    real_data = load_real_data(DATA_FILE) # Load real data
+    real_data = load_real_data(DATA_FILE)  # Load real data
+    if real_data.empty:  # Check if real_data loading was successful
+        return  # Exit early if loading failed
+
     synthetic_data = generate_synthetic_data(real_data, desired_duration_minutes=60)  # Generate synthetic data
 
-    if synthetic_data.empty:
-        st.error("No data available for visualization.")
+    if synthetic_data.empty:  # Check if synthetic data generation was successful
+        st.error("Error generating synthetic data. Check your real data and parameters.")
         return
 
     # Time Range Selection
