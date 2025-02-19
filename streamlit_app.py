@@ -8,7 +8,6 @@ from scipy.fftpack import fft, fftfreq
 # Configuration
 DATA_FILE = "data/Data 150-F-0/51.txt"  # **REPLACE WITH YOUR ACTUAL FILE PATH**
 SAMPLING_RATE = 100  # Hz
-SYNTHETIC_DATA_POINTS = 200
 SIGNAL_FREQUENCY = 50  # Hz
 
 # Load real data
@@ -23,19 +22,32 @@ def load_real_data(file_path):
         st.error(f"Error: File {file_path} not found.")
         return pd.DataFrame(columns=["reading", "bearing_block", "driven_pulley"])
 
-# Generate synthetic data
-def generate_synthetic_data(real_data, num_records=SYNTHETIC_DATA_POINTS, sampling_rate=SAMPLING_RATE):
+# Generate synthetic data (with duration parameter)
+def generate_synthetic_data(real_data, desired_duration_minutes=60, sampling_rate=SAMPLING_RATE):
     if real_data.empty or "driven_pulley" not in real_data.columns:
         st.warning("Real data is missing or doesn't contain 'driven_pulley'. Using default synthetic data.")
-        time_intervals = np.linspace(0, num_records / sampling_rate, num_records)
+        num_records = int(desired_duration_minutes * 60 * sampling_rate)
+        time_intervals = np.linspace(0, desired_duration_minutes * 60, num_records)  # Time intervals in seconds
         synthetic_signal = np.sin(2 * np.pi * SIGNAL_FREQUENCY * time_intervals) + np.random.normal(0, 0.5, num_records)
-        return pd.DataFrame({'timestamp': [datetime.now() - timedelta(seconds=i) for i in range(num_records)], 'Driving belt alignment': synthetic_signal})
+        start_time = datetime.now() - timedelta(minutes=desired_duration_minutes)
+        timestamps = [start_time + timedelta(seconds=i / sampling_rate) for i in range(num_records)]
+        return pd.DataFrame({'timestamp': timestamps, 'Driving belt alignment': synthetic_signal})
 
-    time_intervals = np.linspace(0, num_records / sampling_rate, num_records)
+    # Estimate signal statistics from REAL data
     mean_real = real_data["driven_pulley"].mean()
     std_real = real_data["driven_pulley"].std()
+
+    num_records = int(desired_duration_minutes * 60 * sampling_rate)
+    time_intervals = np.linspace(0, desired_duration_minutes * 60, num_records)  # Time intervals in seconds
+
+    # Generate Synthetic Data
     synthetic_signal = np.sin(2 * np.pi * SIGNAL_FREQUENCY * time_intervals) * std_real + mean_real + np.random.normal(0, std_real * 0.2, num_records)
-    return pd.DataFrame({'timestamp': [datetime.now() - timedelta(seconds=i) for i in range(num_records)], 'Driving belt alignment': synthetic_signal})
+
+    start_time = datetime.now() - timedelta(minutes=desired_duration_minutes)
+    timestamps = [start_time + timedelta(seconds=i / sampling_rate) for i in range(num_records)]
+
+    return pd.DataFrame({'timestamp': timestamps, 'Driving belt alignment': synthetic_signal})
+
 
 # FFT computation (Corrected)
 def compute_fft(signal, sampling_rate=SAMPLING_RATE):
@@ -45,14 +57,15 @@ def compute_fft(signal, sampling_rate=SAMPLING_RATE):
     signal_np = signal.to_numpy()  # Convert to NumPy array
 
     num_samples = len(signal_np)
-    freq_values = fftfreq(num_samples, d=1/sampling_rate)[:num_samples//2]
-    fft_values = np.abs(fft(signal_np))[:num_samples//2]
+    freq_values = fftfreq(num_samples, d=1 / sampling_rate)[:num_samples // 2]
+    fft_values = np.abs(fft(signal_np))[:num_samples // 2]
     return freq_values, fft_values
 
 
 # Load data
 real_data = load_real_data(DATA_FILE)
-synthetic_data = generate_synthetic_data(real_data)
+synthetic_data = generate_synthetic_data(real_data, desired_duration_minutes=60)  # Generate 1 hour of data by default. You can adjust it here.
+
 
 # Streamlit app
 st.set_page_config(page_title="Fanskid Monitoring Dashboard", layout="wide")
@@ -61,6 +74,7 @@ if "selected_device" not in st.session_state:
     st.session_state.selected_device = None
 
 def show_dashboard():
+    # ... (Dashboard code remains the same)
     st.title("Fanskid Monitoring Dashboard")
     col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
 
