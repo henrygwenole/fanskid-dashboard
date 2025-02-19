@@ -7,8 +7,8 @@ from scipy.fftpack import fft, fftfreq
 
 # Configuration
 DATA_FILE = "data/Data 150-F-0/51.txt"  # **REPLACE WITH YOUR ACTUAL FILE PATH**
-SAMPLING_RATE = 100  # Hz
-SIGNAL_FREQUENCY = 50  # Hz  (This might need adjustment based on your data)
+SAMPLING_RATE = 10000  # Hz (Adjust if needed)
+SIGNAL_FREQUENCY = 5000  # Hz (Adjust to match your expected vibration frequencies)
 
 # 1. Load Real Data (Adapt this to your file format)
 def load_real_data(file_path):
@@ -47,18 +47,49 @@ def generate_synthetic_data(real_data, desired_duration_minutes=60, sampling_rat
     return pd.DataFrame({'timestamp': timestamps, 'Driving belt alignment': synthetic_signal})
 
 
-# 3. Compute FFT (Improved)
-def compute_fft(signal, sample_rate=100):
+# 3. Compute FFT (Improved and with Scaling)
+def compute_fft(signal, sample_rate=10000):  # Use correct sample rate here as well
     N = len(signal)
     T = 1 / sample_rate
-    yf = np.fft.fft(signal)
-    xf = np.fft.fftfreq(N, T)[:N // 2]  # Positive frequencies only
-    return xf, np.abs(yf[:N // 2])  # Return frequencies and magnitudes
+    
+    # Scale the signal (important for vibration data)
+    scaled_signal = signal / np.max(np.abs(signal))  # Scale to -1 to 1
 
-# ... (Rest of the code remains the same)
+    yf = np.fft.fft(scaled_signal)
+    xf = np.fft.fftfreq(N, T)[:N // 2]
+    return xf, np.abs(yf[:N // 2])
+
+# Streamlit app
+st.set_page_config(page_title="Fanskid Monitoring Dashboard", layout="wide")
+
+if "selected_device" not in st.session_state:
+    st.session_state.selected_device = None
+
+def show_dashboard():
+    st.title("Fanskid Monitoring Dashboard")
+    col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
+
+    with col1:
+        st.markdown(
+            f'<div style="background-color:#E74C3C; padding:15px; border-radius:5px; color:white; font-weight:bold;">❌ Driving belt alignment</div>',
+            unsafe_allow_html=True
+        )
+    with col2:
+        st.image("assets/icons/data_icon.svg", width=30)  # **CHECK IMAGE PATH**
+        if st.button("View Data", key="data_belt"):
+            st.session_state.selected_device = "Driving belt alignment"
+            st.rerun()
+    with col3:
+        st.image("assets/icons/maintenance_icon.svg", width=30) # **CHECK IMAGE PATH**
+        if st.button("Maintenance", key="maint_belt"):
+            st.markdown(f"[Maintenance Instructions](#)")  # Placeholder link
+
 
 def show_data():
     st.title("Live Data - Driving Belt Alignment")
+
+    real_data = load_real_data(DATA_FILE) # Load real data
+    synthetic_data = generate_synthetic_data(real_data, desired_duration_minutes=60)  # Generate synthetic data
 
     if synthetic_data.empty:
         st.error("No data available for visualization.")
@@ -91,10 +122,10 @@ def show_data():
     st.plotly_chart(fig_time)
 
     # Frequency-domain analysis (using filtered data and improved FFT)
-    freq, magnitude = compute_fft(filtered_data['Driving belt alignment'], SAMPLING_RATE)  # Use improved FFT
+    freq, magnitude = compute_fft(filtered_data['Driving belt alignment'], SAMPLING_RATE)  # Use correct sample rate
 
     fig_freq = go.Figure()
-    fig_freq.add_trace(go.Scatter(x=freq, y=magnitude, mode='lines', name='Synthetic Data (Faulty)', line=dict(color='red')))  # Plot using freq and magnitude
+    fig_freq.add_trace(go.Scatter(x=freq, y=magnitude, mode='lines', name='Synthetic Data (Faulty)', line=dict(color='red')))
     fig_freq.update_layout(title="Frequency Domain Analysis", xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
     st.plotly_chart(fig_freq)
 
@@ -104,4 +135,8 @@ def show_data():
         st.session_state.selected_device = None
         st.rerun()
 
-# ... (Rest of the code remains the same)
+
+if st.session_state.selected_device:
+    show_data()
+else:
+    show_dashboard()
