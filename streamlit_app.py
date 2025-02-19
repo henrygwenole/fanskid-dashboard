@@ -10,17 +10,23 @@ from scipy.fftpack import fft, fftfreq
 def load_real_data(file_path):
     try:
         df = pd.read_csv(file_path, sep="\t", header=None, names=["reading", "bearing_block", "driven_pulley"])
-        return df[["reading", "bearing_block", "driven_pulley"]]
+        if df.empty:
+            st.error(f"Error: The file {file_path} is empty.")
+        return df
     except FileNotFoundError:
         st.error(f"Error: File {file_path} not found.")
         return pd.DataFrame(columns=["reading", "bearing_block", "driven_pulley"])
 
 # Synthetic Data Generation based on Real Data Statistics
 def generate_synthetic_data(real_data, num_records=100, sampling_rate=100):
+    if real_data.empty:
+        return pd.DataFrame(columns=['timestamp', 'Driving belt alignment'])
+    
     time_intervals = np.linspace(0, num_records / sampling_rate, num_records)
     mean_real = real_data.mean()
     std_real = real_data.std()
-    synthetic_signal = np.sin(2 * np.pi * 50 * time_intervals) * std_real + mean_real + np.random.normal(0, std_real, num_records)
+    
+    synthetic_signal = np.sin(2 * np.pi * 50 * time_intervals) * std_real["driven_pulley"] + mean_real["driven_pulley"] + np.random.normal(0, std_real["driven_pulley"], num_records)
     
     return pd.DataFrame({
         'timestamp': [datetime.now() - timedelta(seconds=i) for i in range(num_records)],
@@ -30,7 +36,12 @@ def generate_synthetic_data(real_data, num_records=100, sampling_rate=100):
 # Load real dataset
 data_file = "data/Data 150-F-0/51.txt"  # Updated file path
 real_data = load_real_data(data_file)
-synthetic_data = generate_synthetic_data(real_data["driven_pulley"]) if not real_data.empty else pd.DataFrame()
+
+# Check if 'driven_pulley' column exists before generating synthetic data
+if "driven_pulley" in real_data.columns:
+    synthetic_data = generate_synthetic_data(real_data)
+else:
+    synthetic_data = pd.DataFrame(columns=['timestamp', 'Driving belt alignment'])
 
 st.set_page_config(page_title="Fanskid Monitoring Dashboard", layout="wide")
 
@@ -38,6 +49,9 @@ if "selected_device" not in st.session_state:
     st.session_state.selected_device = None
 
 def compute_fft(signal, sampling_rate=100):
+    if signal.empty:
+        return np.array([]), np.array([])
+
     num_samples = len(signal)
     freq_values = fftfreq(num_samples, d=1/sampling_rate)[:num_samples//2]
     fft_values = abs(fft(signal))[:num_samples//2]
@@ -76,12 +90,23 @@ def show_data():
     
     # Frequency-domain analysis using FFT
     sampling_rate = 100  # Hz
-    freq_values, fft_values = compute_fft(synthetic_data['Driving belt alignment'], sampling_rate)
-    freq_values_real, fft_values_real = compute_fft(real_data['driven_pulley'], sampling_rate)
     
+    if not synthetic_data.empty and "Driving belt alignment" in synthetic_data.columns:
+        freq_values, fft_values = compute_fft(synthetic_data['Driving belt alignment'], sampling_rate)
+    else:
+        freq_values, fft_values = np.array([]), np.array([])
+
+    if not real_data.empty and "driven_pulley" in real_data.columns:
+        freq_values_real, fft_values_real = compute_fft(real_data['driven_pulley'], sampling_rate)
+    else:
+        freq_values_real, fft_values_real = np.array([]), np.array([])
+
     fig_freq = go.Figure()
-    fig_freq.add_trace(go.Scatter(x=freq_values_real, y=fft_values_real, mode='lines', name='Real Data (Good)'))
-    fig_freq.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='Synthetic Data (Faulty)', line=dict(color='red')))
+    if freq_values_real.size > 0 and fft_values_real.size > 0:
+        fig_freq.add_trace(go.Scatter(x=freq_values_real, y=fft_values_real, mode='lines', name='Real Data (Good)'))
+    if freq_values.size > 0 and fft_values.size > 0:
+        fig_freq.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='Synthetic Data (Faulty)', line=dict(color='red')))
+    
     fig_freq.update_layout(title="Frequency Domain Analysis", xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
     st.plotly_chart(fig_freq)
     
