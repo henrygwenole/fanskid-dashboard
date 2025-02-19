@@ -28,7 +28,7 @@ def generate_synthetic_data(real_data, num_records=100, sampling_rate=100):
     })
 
 # Load real dataset
-data_file = "/data/Data 150-F-0/51.txt"  # Updated file path
+data_file = "data/Data 150-F-0/51.txt"  # Updated file path
 real_data = load_real_data(data_file)
 synthetic_data = generate_synthetic_data(real_data["driven_pulley"]) if not real_data.empty else pd.DataFrame()
 
