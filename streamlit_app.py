@@ -74,7 +74,6 @@ if "selected_device" not in st.session_state:
     st.session_state.selected_device = None
 
 def show_dashboard():
-    # ... (Dashboard code remains the same)
     st.title("Fanskid Monitoring Dashboard")
     col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
 
@@ -102,17 +101,19 @@ def show_data():
         return
 
     # Time Range Selection
-    time_range = st.selectbox("Select Time Range", ["Last 10 min", "Last 30 min", "Last 1 hour", "Last 24 hours"])
+    time_range = st.selectbox("Select Time Range", ["Last 1 min", "Last 2 min", "Last 10 min", "Last 30 min", "Last 1 hour"])
 
     now = datetime.now()
-    if time_range == "Last 10 min":
+    if time_range == "Last 1 min":
+        time_limit = now - timedelta(minutes=1)
+    elif time_range == "Last 2 min":
+        time_limit = now - timedelta(minutes=2)
+    elif time_range == "Last 10 min":
         time_limit = now - timedelta(minutes=10)
     elif time_range == "Last 30 min":
         time_limit = now - timedelta(minutes=30)
     elif time_range == "Last 1 hour":
         time_limit = now - timedelta(hours=1)
-    elif time_range == "Last 24 hours":
-        time_limit = now - timedelta(hours=24)
 
     filtered_data = synthetic_data[synthetic_data['timestamp'] >= time_limit]
 
