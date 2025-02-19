@@ -62,7 +62,6 @@ if "selected_device" not in st.session_state:
     st.session_state.selected_device = None
 
 def show_dashboard():
-    # ... (Dashboard code remains the same)
     st.title("Fanskid Monitoring Dashboard")
     col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
 
@@ -94,26 +93,37 @@ def show_data():
     freq_domain_placeholder = st.empty()
     data_table_placeholder = st.empty()
 
+    # Pause/Play state
+    if "paused" not in st.session_state:
+        st.session_state.paused = False
+
+    if st.button("Pause" if not st.session_state.paused else "Play"):
+        st.session_state.paused = not st.session_state.paused
+
     for i in range(1, len(synthetic_data) + 1):
-        current_data = synthetic_data[:i]
+        if not st.session_state.paused:
+            current_data = synthetic_data[:i]
 
-        # Time-domain plot
-        fig_time = go.Figure()
-        fig_time.add_trace(go.Scatter(x=current_data['timestamp'], y=current_data['Driving belt alignment'], mode='lines', name='Synthetic Data'))
-        time_domain_placeholder.plotly_chart(fig_time)
+            # Time-domain plot
+            fig_time = go.Figure()
+            fig_time.add_trace(go.Scatter(x=current_data['timestamp'], y=current_data['Driving belt alignment'], mode='lines', name='Synthetic Data'))
+            time_domain_placeholder.plotly_chart(fig_time)
 
-        # Frequency-domain analysis (Only Synthetic Data)
-        freq_values, fft_values = compute_fft(current_data['Driving belt alignment'])  # FFT on current data subset
-        fig_freq = go.Figure()
-        if freq_values.size > 0 and fft_values.size > 0:
-            fig_freq.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='Synthetic Data (Faulty)', line=dict(color='red')))
-        fig_freq.update_layout(title="Frequency Domain Analysis", xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
-        freq_domain_placeholder.plotly_chart(fig_freq)
+            # Frequency-domain analysis (Only Synthetic Data)
+            freq_values, fft_values = compute_fft(current_data['Driving belt alignment'])
+            fig_freq = go.Figure()
+            if freq_values.size > 0 and fft_values.size > 0:
+                fig_freq.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='Synthetic Data (Faulty)', line=dict(color='red')))
+            fig_freq.update_layout(title="Frequency Domain Analysis", xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
+            freq_domain_placeholder.plotly_chart(fig_freq)
 
-        # Data Table
-        data_table_placeholder.dataframe(current_data[['timestamp', 'Driving belt alignment']])
+            # Data Table
+            data_table_placeholder.dataframe(current_data[['timestamp', 'Driving belt alignment']])
 
-        time.sleep(0.1)  # Simulate a 100ms delay (adjust as needed)
+            time.sleep(0.1)  # Simulate a 100ms delay (adjust as needed)
+
+        else:
+            time.sleep(0.05)  # Small sleep while paused
 
     if st.button("Back to Dashboard"):
         st.session_state.selected_device = None
