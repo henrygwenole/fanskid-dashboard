@@ -112,10 +112,12 @@ def show_data():
     st.plotly_chart(fig_time)
 
     # Frequency-domain analysis (using filtered data)
-    freq_values, fft_values = compute_fft(filtered_data['Driving belt alignment'])
+    freq_values, fft_values = compute_fft(filtered_data['Driving belt alignment'])  # Corrected: FFT on filtered data
+
     fig_freq = go.Figure()
     if freq_values.size > 0 and fft_values.size > 0:
         fig_freq.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='Synthetic Data (Faulty)', line=dict(color='red')))
+
     fig_freq.update_layout(title="Frequency Domain Analysis", xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
     st.plotly_chart(fig_freq)
 
