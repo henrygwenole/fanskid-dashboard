@@ -7,13 +7,8 @@ from scipy.fftpack import fft, fftfreq
 
 # Configuration
 DATA_FILE = "data/Data 150-F-0/51.txt"  # **REPLACE WITH YOUR ACTUAL FILE PATH**
-<<<<<<< HEAD
-SAMPLING_RATE = 10000  # Hz (Adjust if needed)
-SIGNAL_FREQUENCY = 5000  # Hz (Adjust to match your expected vibration frequencies)
-=======
 SAMPLING_RATE = 100  # Hz
-SIGNAL_FREQUENCY = 50  # Hz
->>>>>>> parent of 1ef8143 (Update streamlit_app.py)
+SIGNAL_FREQUENCY = 5000  # Hz
 
 # Load real data
 def load_real_data(file_path):
@@ -26,10 +21,6 @@ def load_real_data(file_path):
     except FileNotFoundError:
         st.error(f"Error: File {file_path} not found.")
         return pd.DataFrame(columns=["reading", "bearing_block", "driven_pulley"])
-    except Exception as e:  # Catch other potential errors
-        st.error(f"An error occurred while loading data: {e}")
-        return pd.DataFrame(columns=["reading", "bearing_block", "driven_pulley"])
-
 
 # Generate synthetic data (with duration parameter)
 def generate_synthetic_data(real_data, desired_duration_minutes=60, sampling_rate=SAMPLING_RATE):
@@ -58,47 +49,6 @@ def generate_synthetic_data(real_data, desired_duration_minutes=60, sampling_rat
     return pd.DataFrame({'timestamp': timestamps, 'Driving belt alignment': synthetic_signal})
 
 
-<<<<<<< HEAD
-# 3. Compute FFT (Improved and with Scaling)
-def compute_fft(signal, sample_rate=10000):  # Use correct sample rate here as well
-    N = len(signal)
-    T = 1 / sample_rate
-
-    # Scale the signal (important for vibration data)
-    scaled_signal = signal / np.max(np.abs(signal))  # Scale to -1 to 1
-
-    yf = np.fft.fft(scaled_signal)
-    xf = np.fft.fftfreq(N, T)[:N // 2]
-    return xf, np.abs(yf[:N // 2])
-
-
-# Streamlit app
-st.set_page_config(page_title="Fanskid Monitoring Dashboard", layout="wide")
-
-if "selected_device" not in st.session_state:
-    st.session_state.selected_device = None
-
-def show_dashboard():
-    # ... (Dashboard code remains the same)
-    st.title("Fanskid Monitoring Dashboard")
-    col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
-
-    with col1:
-        st.markdown(
-            f'<div style="background-color:#E74C3C; padding:15px; border-radius:5px; color:white; font-weight:bold;">❌ Driving belt alignment</div>',
-            unsafe_allow_html=True
-        )
-    with col2:
-        st.image("assets/icons/data_icon.svg", width=30)  # **CHECK IMAGE PATH**
-        if st.button("View Data", key="data_belt"):
-            st.session_state.selected_device = "Driving belt alignment"
-            st.rerun()
-    with col3:
-        st.image("assets/icons/maintenance_icon.svg", width=30) # **CHECK IMAGE PATH**
-        if st.button("Maintenance", key="maint_belt"):
-            st.markdown(f"[Maintenance Instructions](#)")  # Placeholder link
-
-=======
 # FFT computation (Corrected)
 def compute_fft(signal, sampling_rate=SAMPLING_RATE):
     if signal.empty:
@@ -142,19 +92,12 @@ def show_dashboard():
         if st.button("Maintenance", key="maint_belt"):
             st.markdown(f"[Maintenance Instructions](#)")  # Placeholder link
 
->>>>>>> parent of 1ef8143 (Update streamlit_app.py)
 
 def show_data():
     st.title("Live Data - Driving Belt Alignment")
 
-    real_data = load_real_data(DATA_FILE)  # Load real data
-    if real_data.empty:  # Check if real_data loading was successful
-        return  # Exit early if loading failed
-
-    synthetic_data = generate_synthetic_data(real_data, desired_duration_minutes=60)  # Generate synthetic data
-
-    if synthetic_data.empty:  # Check if synthetic data generation was successful
-        st.error("Error generating synthetic data. Check your real data and parameters.")
+    if synthetic_data.empty:
+        st.error("No data available for visualization.")
         return
 
     # Time Range Selection
@@ -183,13 +126,6 @@ def show_data():
     fig_time.add_trace(go.Scatter(x=filtered_data['timestamp'], y=filtered_data['Driving belt alignment'], mode='lines', name='Synthetic Data'))
     st.plotly_chart(fig_time)
 
-<<<<<<< HEAD
-    # Frequency-domain analysis (using filtered data and improved FFT)
-    freq, magnitude = compute_fft(filtered_data['Driving belt alignment'], SAMPLING_RATE)  # Use correct sample rate
-
-    fig_freq = go.Figure()
-    fig_freq.add_trace(go.Scatter(x=freq, y=magnitude, mode='lines', name='Synthetic Data (Faulty)', line=dict(color='red')))
-=======
     # Frequency-domain analysis (using filtered data)
     freq_values, fft_values = compute_fft(filtered_data['Driving belt alignment'])  # Corrected: FFT on filtered data
 
@@ -197,7 +133,6 @@ def show_data():
     if freq_values.size > 0 and fft_values.size > 0:
         fig_freq.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='Synthetic Data (Faulty)', line=dict(color='red')))
 
->>>>>>> parent of 1ef8143 (Update streamlit_app.py)
     fig_freq.update_layout(title="Frequency Domain Analysis", xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
     st.plotly_chart(fig_freq)
 
