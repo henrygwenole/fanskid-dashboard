@@ -4,13 +4,15 @@ import plotly.graph_objects as go
 import numpy as np
 from datetime import datetime, timedelta
 from scipy.fftpack import fft, fftfreq
+from scipy.signal import hann
 
 # Configuration
 DATA_FILE = "data/Data 150-F-0/51.txt"  # **REPLACE WITH YOUR ACTUAL FILE PATH**
 SAMPLING_RATE = 100  # Hz
 SIGNAL_FREQUENCY = 50  # Hz
 
-# Load real data
+# Load real data (with caching)
+@st.cache_data
 def load_real_data(file_path):
     try:
         df = pd.read_csv(file_path, sep="\t", header=None, names=["reading", "bearing_block", "driven_pulley"])
@@ -46,15 +48,22 @@ def generate_synthetic_data(real_data, desired_duration_minutes=60, sampling_rat
     return pd.DataFrame({'timestamp': timestamps, 'Driving belt alignment': synthetic_signal})
 
 
-# FFT computation with frequency limit
-def compute_fft(signal, sampling_rate=SAMPLING_RATE, max_freq=5000):
+# FFT computation with windowing and caching
+@st.cache_data
+def compute_fft(signal, sampling_rate=SAMPLING_RATE, max_freq=5000, zero_padding_factor=1):
     if signal.empty:
         return np.array([]), np.array([])
 
     signal_np = signal.to_numpy()
     num_samples = len(signal_np)
-    freq_values = fftfreq(num_samples, d=1 / sampling_rate)[:num_samples // 2]
-    fft_values = np.abs(fft(signal_np))[:num_samples // 2]
+
+    window = hann(num_samples)  # Hann window
+    windowed_signal = signal_np * window
+
+    padded_signal = np.pad(windowed_signal, (0, num_samples * (zero_padding_factor - 1)), 'constant')
+
+    fft_values = np.abs(fft(padded_signal))[:len(padded_signal) // 2]
+    freq_values = fftfreq(len(padded_signal), d=1 / sampling_rate)[:len(padded_signal) // 2]
 
     mask = freq_values <= max_freq
     freq_values = freq_values[mask]
@@ -63,7 +72,7 @@ def compute_fft(signal, sampling_rate=SAMPLING_RATE, max_freq=5000):
     return freq_values, fft_values
 
 
-# Load data
+# Load data (outside the show_dashboard function)
 real_data = load_real_data(DATA_FILE)
 synthetic_data = generate_synthetic_data(real_data, desired_duration_minutes=60)
 
@@ -83,12 +92,12 @@ def show_dashboard():
             unsafe_allow_html=True
         )
     with col2:
-        st.image("assets/icons/data_icon.svg", width=30)  # **CHECK IMAGE PATH**
+        #st.image("assets/icons/data_icon.svg", width=30)  # **CHECK IMAGE PATH**
         if st.button("View Data", key="data_belt"):
             st.session_state.selected_device = "Driving belt alignment"
             st.rerun()
     with col3:
-        st.image("assets/icons/maintenance_icon.svg", width=30) # **CHECK IMAGE PATH**
+        #st.image("assets/icons/maintenance_icon.svg", width=30) # **CHECK IMAGE PATH**
         if st.button("Maintenance", key="maint_belt"):
             st.markdown(f"[Maintenance Instructions](#)")  # Placeholder link
 
@@ -124,7 +133,7 @@ def show_data():
     fig_time.add_trace(go.Scatter(x=filtered_data['timestamp'], y=filtered_data['Driving belt alignment'], mode='lines', name='Synthetic Data'))
     st.plotly_chart(fig_time)
 
-    freq_values, fft_values = compute_fft(filtered_data['Driving belt alignment'], max_freq=5000)
+    freq_values, fft_values = compute_fft(filtered_data['Driving belt alignment'], max_freq=5000, zero_padding_factor=2)
 
     fig_freq = go.Figure()
     if freq_values.size > 0 and fft_values.size > 0:
