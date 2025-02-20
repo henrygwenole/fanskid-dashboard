@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import numpy as np
 from datetime import datetime, timedelta
 from scipy.fftpack import fft, fftfreq
-from scipy.signal import hann
+from scipy.signal.windows import hann  # ✅ Fixed Import
 
 # Configuration
 DATA_FILE = "data/Data 150-F-0/51.txt"  # **REPLACE WITH YOUR ACTUAL FILE PATH**
@@ -37,7 +37,6 @@ def generate_synthetic_data(real_data, desired_duration_minutes=60, sampling_rat
 
     mean_real = real_data["driven_pulley"].mean()
     std_real = real_data["driven_pulley"].std()
-
     num_records = int(desired_duration_minutes * 60 * sampling_rate)
     time_intervals = np.linspace(0, desired_duration_minutes * 60, num_records)
     synthetic_signal = np.sin(2 * np.pi * SIGNAL_FREQUENCY * time_intervals) * std_real + mean_real + np.random.normal(0, std_real * 0.2, num_records)
@@ -47,7 +46,6 @@ def generate_synthetic_data(real_data, desired_duration_minutes=60, sampling_rat
 
     return pd.DataFrame({'timestamp': timestamps, 'Driving belt alignment': synthetic_signal})
 
-
 # FFT computation with windowing and caching
 @st.cache_data
 def compute_fft(signal, sampling_rate=SAMPLING_RATE, max_freq=5000, zero_padding_factor=1):
@@ -56,21 +54,13 @@ def compute_fft(signal, sampling_rate=SAMPLING_RATE, max_freq=5000, zero_padding
 
     signal_np = signal.to_numpy()
     num_samples = len(signal_np)
-
-    window = hann(num_samples)  # Hann window
+    window = hann(num_samples)  # ✅ Fixed Import
     windowed_signal = signal_np * window
-
     padded_signal = np.pad(windowed_signal, (0, num_samples * (zero_padding_factor - 1)), 'constant')
-
     fft_values = np.abs(fft(padded_signal))[:len(padded_signal) // 2]
     freq_values = fftfreq(len(padded_signal), d=1 / sampling_rate)[:len(padded_signal) // 2]
-
     mask = freq_values <= max_freq
-    freq_values = freq_values[mask]
-    fft_values = fft_values[mask]
-
-    return freq_values, fft_values
-
+    return freq_values[mask], fft_values[mask]
 
 # Load data (outside the show_dashboard function)
 real_data = load_real_data(DATA_FILE)
@@ -87,43 +77,25 @@ def show_dashboard():
     col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
 
     with col1:
-        st.markdown(
-            f'<div style="background-color:#E74C3C; padding:15px; border-radius:5px; color:white; font-weight:bold;">❌ Driving belt alignment</div>',
-            unsafe_allow_html=True
-        )
+        st.markdown('<div style="background-color:#E74C3C; padding:15px; border-radius:5px; color:white; font-weight:bold;">❌ Driving belt alignment</div>', unsafe_allow_html=True)
     with col2:
-        #st.image("assets/icons/data_icon.svg", width=30)  # **CHECK IMAGE PATH**
         if st.button("View Data", key="data_belt"):
             st.session_state.selected_device = "Driving belt alignment"
             st.rerun()
     with col3:
-        #st.image("assets/icons/maintenance_icon.svg", width=30) # **CHECK IMAGE PATH**
         if st.button("Maintenance", key="maint_belt"):
             st.markdown(f"[Maintenance Instructions](#)")  # Placeholder link
 
-
 def show_data():
     st.title("Live Data - Driving Belt Alignment")
-
     if synthetic_data.empty:
         st.error("No data available for visualization.")
         return
 
     time_range = st.selectbox("Select Time Range", ["Last 1 min", "Last 2 min", "Last 10 min", "Last 30 min", "Last 1 hour"])
-
     now = datetime.now()
-    if time_range == "Last 1 min":
-        time_limit = now - timedelta(minutes=1)
-    elif time_range == "Last 2 min":
-        time_limit = now - timedelta(minutes=2)
-    elif time_range == "Last 10 min":
-        time_limit = now - timedelta(minutes=10)
-    elif time_range == "Last 30 min":
-        time_limit = now - timedelta(minutes=30)
-    elif time_range == "Last 1 hour":
-        time_limit = now - timedelta(hours=1)
-
-    filtered_data = synthetic_data[synthetic_data['timestamp'] >= time_limit]
+    time_limits = {"Last 1 min": now - timedelta(minutes=1), "Last 2 min": now - timedelta(minutes=2), "Last 10 min": now - timedelta(minutes=10), "Last 30 min": now - timedelta(minutes=30), "Last 1 hour": now - timedelta(hours=1)}
+    filtered_data = synthetic_data[synthetic_data['timestamp'] >= time_limits[time_range]]
 
     if filtered_data.empty:
         st.warning(f"No data available for the selected time range ({time_range}).")
@@ -134,11 +106,9 @@ def show_data():
     st.plotly_chart(fig_time)
 
     freq_values, fft_values = compute_fft(filtered_data['Driving belt alignment'], max_freq=5000, zero_padding_factor=2)
-
     fig_freq = go.Figure()
     if freq_values.size > 0 and fft_values.size > 0:
         fig_freq.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='Synthetic Data (Faulty)', line=dict(color='red')))
-
     fig_freq.update_layout(title="Frequency Domain Analysis", xaxis_title="Frequency (Hz)", yaxis_title="Amplitude", xaxis_range=[0, 5000])
     st.plotly_chart(fig_freq)
 
@@ -147,7 +117,6 @@ def show_data():
     if st.button("Back to Dashboard"):
         st.session_state.selected_device = None
         st.rerun()
-
 
 if st.session_state.selected_device:
     show_data()
