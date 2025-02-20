@@ -4,9 +4,14 @@ import plotly.graph_objects as go
 import numpy as np
 from datetime import datetime, timedelta
 from scipy.fftpack import fft, fftfreq
-from scipy.signal.windows import hann  # ✅ Fixed Import
+from scipy.signal.windows import hann
 
-# Configuration
+# VERY IMPORTANT: This MUST be outside any functions and at the very top
+if "page_configured" not in st.session_state:
+    st.set_page_config(page_title="Fanskid Monitoring Dashboard", layout="wide")
+    st.session_state.page_configured = True
+
+# Configuration (REPLACE WITH YOUR FILE PATH)
 DATA_FILE = "data/Data 150-F-0/51.txt"  # **REPLACE WITH YOUR ACTUAL FILE PATH**
 SAMPLING_RATE = 100  # Hz
 SIGNAL_FREQUENCY = 50  # Hz
@@ -54,7 +59,7 @@ def compute_fft(signal, sampling_rate=SAMPLING_RATE, max_freq=5000, zero_padding
 
     signal_np = signal.to_numpy()
     num_samples = len(signal_np)
-    window = hann(num_samples)  # ✅ Fixed Import
+    window = hann(num_samples)
     windowed_signal = signal_np * window
     padded_signal = np.pad(windowed_signal, (0, num_samples * (zero_padding_factor - 1)), 'constant')
     fft_values = np.abs(fft(padded_signal))[:len(padded_signal) // 2]
@@ -66,9 +71,7 @@ def compute_fft(signal, sampling_rate=SAMPLING_RATE, max_freq=5000, zero_padding
 real_data = load_real_data(DATA_FILE)
 synthetic_data = generate_synthetic_data(real_data, desired_duration_minutes=60)
 
-# Streamlit app
-st.set_page_config(page_title="Fanskid Monitoring Dashboard", layout="wide")
-
+# Streamlit app logic
 if "selected_device" not in st.session_state:
     st.session_state.selected_device = None
 
