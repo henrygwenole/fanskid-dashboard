@@ -29,25 +29,26 @@ def load_real_data(file_path):
         st.error(f"Error: File {file_path} not found.")
         return pd.DataFrame(columns=["reading", "bearing_block", "driven_pulley"])
 
-# Generate synthetic data (ADJUSTED)
+# Generate synthetic data (ADJUSTED - with np.clip())
 def generate_synthetic_data(real_data, desired_duration_minutes=60, sampling_rate=SAMPLING_RATE):
     num_records = int(desired_duration_minutes * 60 * sampling_rate)
     time_intervals = np.linspace(0, desired_duration_minutes * 60, num_records)
 
-    amplitude = 0.4  # Adjust amplitude to control the signal range
-    synthetic_signal = amplitude * np.sin(2 * np.pi * SIGNAL_FREQUENCY * time_intervals)
+    amplitude = 0.5  # Maximum possible amplitude
+    frequency = SIGNAL_FREQUENCY  # Your signal frequency
+    synthetic_signal = amplitude * np.sin(2 * np.pi * frequency * time_intervals)
 
-    noise_std = 0.1  # Adjust standard deviation to control noise level
+    noise_std_percentage = 0.1  # 10% of the maximum amplitude
+    noise_std = amplitude * noise_std_percentage
     synthetic_signal += np.random.normal(0, noise_std, num_records)
 
-    dc_offset = 0.0  # Adjust if you want to shift the signal up or down
-    synthetic_signal += dc_offset
+    # Ensure the signal stays within +/- 0.5 (clipping):
+    synthetic_signal = np.clip(synthetic_signal, -0.5, 0.5)
 
     start_time = datetime.now() - timedelta(minutes=desired_duration_minutes)
     timestamps = [start_time + timedelta(seconds=i / sampling_rate) for i in range(num_records)]
 
     return pd.DataFrame({'timestamp': timestamps, 'Driving belt alignment': synthetic_signal})
-
 
 # FFT computation with windowing and caching
 @st.cache_data
@@ -108,11 +109,9 @@ def show_data():
     print(f"Std dev signal value: {filtered_data['Driving belt alignment'].std()}")
     print(f"Mean signal value: {filtered_data['Driving belt alignment'].mean()}")
 
-
     fig_time = go.Figure()
     fig_time.add_trace(go.Scatter(x=filtered_data['timestamp'], y=filtered_data['Driving belt alignment'], mode='lines', name='Synthetic Data'))
-    fig_time.update_layout(yaxis_range=[-0.6, 0.6])  # Explicitly set y-axis range
-    st.plotly_chart(fig_time)
+    st.plotly_chart(fig_time)  # No need to set y-axis range here anymore
 
     freq_values, fft_values = compute_fft(filtered_data['Driving belt alignment'], max_freq=5000, zero_padding_factor=2)
     fig_freq = go.Figure()
