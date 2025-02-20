@@ -29,27 +29,25 @@ def load_real_data(file_path):
         st.error(f"Error: File {file_path} not found.")
         return pd.DataFrame(columns=["reading", "bearing_block", "driven_pulley"])
 
-# Generate synthetic data
+# Generate synthetic data (ADJUSTED)
 def generate_synthetic_data(real_data, desired_duration_minutes=60, sampling_rate=SAMPLING_RATE):
-    if real_data.empty or "driven_pulley" not in real_data.columns:
-        st.warning("Real data is missing or doesn't contain 'driven_pulley'. Using default synthetic data.")
-        num_records = int(desired_duration_minutes * 60 * sampling_rate)
-        time_intervals = np.linspace(0, desired_duration_minutes * 60, num_records)
-        synthetic_signal = np.sin(2 * np.pi * SIGNAL_FREQUENCY * time_intervals) + np.random.normal(0, 0.5, num_records)
-        start_time = datetime.now() - timedelta(minutes=desired_duration_minutes)
-        timestamps = [start_time + timedelta(seconds=i / sampling_rate) for i in range(num_records)]
-        return pd.DataFrame({'timestamp': timestamps, 'Driving belt alignment': synthetic_signal})
-
-    mean_real = real_data["driven_pulley"].mean()
-    std_real = real_data["driven_pulley"].std()
     num_records = int(desired_duration_minutes * 60 * sampling_rate)
     time_intervals = np.linspace(0, desired_duration_minutes * 60, num_records)
-    synthetic_signal = np.sin(2 * np.pi * SIGNAL_FREQUENCY * time_intervals) * std_real + mean_real + np.random.normal(0, std_real * 0.2, num_records)
+
+    amplitude = 0.4  # Adjust amplitude to control the signal range
+    synthetic_signal = amplitude * np.sin(2 * np.pi * SIGNAL_FREQUENCY * time_intervals)
+
+    noise_std = 0.1  # Adjust standard deviation to control noise level
+    synthetic_signal += np.random.normal(0, noise_std, num_records)
+
+    dc_offset = 0.0  # Adjust if you want to shift the signal up or down
+    synthetic_signal += dc_offset
 
     start_time = datetime.now() - timedelta(minutes=desired_duration_minutes)
     timestamps = [start_time + timedelta(seconds=i / sampling_rate) for i in range(num_records)]
 
     return pd.DataFrame({'timestamp': timestamps, 'Driving belt alignment': synthetic_signal})
+
 
 # FFT computation with windowing and caching
 @st.cache_data
@@ -104,8 +102,16 @@ def show_data():
         st.warning(f"No data available for the selected time range ({time_range}).")
         return
 
+    # Debugging prints (keep these for monitoring)
+    print(f"Min signal value: {filtered_data['Driving belt alignment'].min()}")
+    print(f"Max signal value: {filtered_data['Driving belt alignment'].max()}")
+    print(f"Std dev signal value: {filtered_data['Driving belt alignment'].std()}")
+    print(f"Mean signal value: {filtered_data['Driving belt alignment'].mean()}")
+
+
     fig_time = go.Figure()
     fig_time.add_trace(go.Scatter(x=filtered_data['timestamp'], y=filtered_data['Driving belt alignment'], mode='lines', name='Synthetic Data'))
+    fig_time.update_layout(yaxis_range=[-0.6, 0.6])  # Explicitly set y-axis range
     st.plotly_chart(fig_time)
 
     freq_values, fft_values = compute_fft(filtered_data['Driving belt alignment'], max_freq=5000, zero_padding_factor=2)
