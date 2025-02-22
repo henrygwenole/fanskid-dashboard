@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+<<<<<<< HEAD
 import numpy as np
 from datetime import datetime, timedelta
 from scipy.fftpack import fft, fftfreq
@@ -10,6 +11,22 @@ from scipy.signal.windows import hann
 if "page_configured" not in st.session_state:
     st.set_page_config(page_title="Fanskid Monitoring Dashboard", layout="wide")
     st.session_state.page_configured = True
+=======
+import random
+from datetime import datetime, timedelta
+
+# Data generation
+def generate_live_data(num_records=100):
+    data = {
+        'timestamp': [datetime.now() - timedelta(minutes=i) for i in range(num_records)],
+        'Driven Drive End Bearing': [random.uniform(20, 40) for _ in range(num_records)],
+        'Motor Drive End Bearing': [random.uniform(20, 40) for _ in range(num_records)],
+        'Driven non Drive End Bearing': [random.uniform(20, 40) for _ in range(num_records)],
+        'Motor non Drive End Bearing': [random.uniform(20, 40) for _ in range(num_records)],
+        'Driving belt alignment': [random.uniform(80, 100) for _ in range(num_records)],
+    }
+    return pd.DataFrame(data)
+>>>>>>> parent of fd13548 (Update streamlit_app.py)
 
 # Configuration (REPLACE WITH YOUR FILE PATH)
 DATA_FILE = "data/Data 150-F-0/51.txt"  # **REPLACE WITH YOUR ACTUAL FILE PATH**
@@ -74,10 +91,24 @@ synthetic_data = generate_synthetic_data(real_data, desired_duration_minutes=60)
 if "selected_device" not in st.session_state:
     st.session_state.selected_device = None
 
+<<<<<<< HEAD
+=======
+# Motor and belt drive details
+MOTOR_SPEED = 2952  # rpm
+FAN_SPEED = 2000  # rpm
+DRIVER_DIA = 160  # mm
+DRIVEN_DIA = 236  # mm
+BELT_FREQ = (MOTOR_SPEED / 60) * (DRIVER_DIA / DRIVEN_DIA)  # Hz
+
+def get_status(device):
+    return ("#E74C3C", "❌") if device == "Driving belt alignment" else ("#2ECC71", "✔️")
+
+>>>>>>> parent of fd13548 (Update streamlit_app.py)
 def show_dashboard():
     st.title("Fanskid Monitoring Dashboard")
     col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
 
+<<<<<<< HEAD
     with col1:
         st.markdown('<div style="background-color:#E74C3C; padding:15px; border-radius:5px; color:white; font-weight:bold;">❌ Driving belt alignment</div>', unsafe_allow_html=True)
     with col2:
@@ -122,6 +153,19 @@ def show_data():
 
     st.dataframe(filtered_data[['timestamp', 'Driving belt alignment']])
 
+=======
+def show_data(device_name):
+    st.title(f"Live Data - {device_name}")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=data['timestamp'], y=data[device_name], mode='lines+markers', name=device_name))
+    if device_name == "Driving belt alignment":
+        frequencies = [BELT_FREQ, MOTOR_SPEED / 60, FAN_SPEED / 60, 50]  # Belt, Shaft, Fan, Line Frequencies
+        for freq in frequencies:
+            fig.add_shape(type='line', x0=min(data['timestamp']), x1=max(data['timestamp']), y0=freq, y1=freq,
+                          line=dict(color='red', dash='dot'))
+    st.plotly_chart(fig)
+    st.dataframe(data[['timestamp', device_name]])
+>>>>>>> parent of fd13548 (Update streamlit_app.py)
     if st.button("Back to Dashboard"):
         st.session_state.selected_device = None
         st.rerun()
