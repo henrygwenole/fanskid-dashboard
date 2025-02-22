@@ -1,9 +1,6 @@
 streamlit
 pandas
-<<<<<<< HEAD
 plotly
 scipy
 numpy
-=======
->>>>>>> parent of 26fe95c (Update requirements.txt)
 plotly
