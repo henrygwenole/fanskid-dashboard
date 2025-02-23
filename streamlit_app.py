@@ -57,7 +57,7 @@ def show_dashboard():
             st.image("assets/icons/maintenance_icon.svg", width=30)
             if st.button("Maintenance", key=f"maint_{device}"):
                 if device == "Driving belt alignment":
-                    st.markdown("[Maintenance Instructions](https://nmis.frontline.io/s/6u615mm)")
+                    st.markdown('<a href="https://nmis.frontline.io/s/6u615mm" target="_blank" style="text-decoration:none; font-weight:bold; color:#007BFF;">Maintenance Instructions</a>', unsafe_allow_html=True)
                 else:
                     st.markdown("[Maintenance Instructions](#)")  # Placeholder link
 
