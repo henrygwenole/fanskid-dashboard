@@ -63,7 +63,7 @@ def show_dashboard():
         with col3:
             if st.button("Maintenance", key=f"maint_{device}"):
                 if device == "Driving belt alignment":
-                    st.markdown('<a href="https://nmis.frontline.io/s/6u615mm" target="_blank">Maintenance Instructions</a>', unsafe_allow_html=True)
+                    st.markdown('<a href="frn://s/6u615mm" target="_blank">Maintenance Instructions</a>', unsafe_allow_html=True)
                 else:
                     st.markdown("[Maintenance Instructions](#)")
 
