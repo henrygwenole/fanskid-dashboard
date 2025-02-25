@@ -53,7 +53,7 @@ def show_dashboard():
         col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
         with col1:
             st.markdown(
-                f'<div style="background-color:{color}; padding:15px; border-radius:5px; color:white; font-weight:bold;">{icon} {device}</div>',
+                f'<div style="background-color:{color}; padding:15px; margin-bottom:10px; border-radius:5px; color:white; font-weight:bold;">{icon} {device}</div>',
                 unsafe_allow_html=True
             )
         with col2:
@@ -66,39 +66,6 @@ def show_dashboard():
                     st.markdown('<a href="https://nmis.frontline.io/s/6u615mm" target="_blank">Maintenance Instructions</a>', unsafe_allow_html=True)
                 else:
                     st.markdown("[Maintenance Instructions](#)")
-
-def show_data(device_name):
-    st.title(f"Live Data - {device_name} ({selected_time_range})")
-    
-    # Time-domain plot
-    fig_time = go.Figure()
-    fig_time.add_trace(go.Scatter(x=data['timestamp'], y=data[device_name], mode='lines+markers', name=device_name))
-    st.plotly_chart(fig_time)
-    
-    # Frequency-domain analysis using FFT
-    sampling_rate = 1  # Hz (1 sample per second)
-    num_samples = len(data)
-    signal = data[device_name].values
-    freq_values = fftfreq(num_samples, d=1/sampling_rate)[:num_samples//2]
-    fft_values = abs(fft(signal))[:num_samples//2]
-    
-    fig_freq = go.Figure()
-    fig_freq.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='FFT Magnitude'))
-    fig_freq.update_layout(title="Frequency Domain Analysis", xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
-    st.plotly_chart(fig_freq)
-    
-    # Motor Current Plot
-    fig_motor_current = go.Figure()
-    fig_motor_current.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='Motor Current'))
-    fig_motor_current.update_layout(title="Motor Current vs Frequency", xaxis_title="Frequency (Hz)", yaxis_title="Current (A)")
-    st.plotly_chart(fig_motor_current)
-    
-    # Data Table
-    st.dataframe(data[['timestamp', device_name]])
-    
-    if st.button("Back to Dashboard"):
-        st.session_state.selected_device = None
-        st.rerun()
 
 if st.session_state.selected_device:
     show_data(st.session_state.selected_device)
