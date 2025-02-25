@@ -50,7 +50,7 @@ def show_dashboard():
     st.title("Fanskid Monitoring Dashboard")
     for device in data.columns[1:]:
         color, icon = get_status(device)
-        col1, col2, col3 = st.columns([0.8, 0.1, 0.1])
+        col1, col2, col3 = st.columns([0.4, 0.3, 0.3])
         with col1:
             st.markdown(
                 f'<div style="background-color:{color}; padding:15px; margin-bottom:10px; border-radius:5px; color:white; font-weight:bold;">{icon} {device}</div>',
