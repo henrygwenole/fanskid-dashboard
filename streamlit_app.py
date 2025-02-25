@@ -67,6 +67,40 @@ def show_dashboard():
                 else:
                     st.markdown("[Maintenance Instructions](#)")
 
+def show_data(device_name):
+    st.title(f"Live Data - {device_name}")
+    
+    # Time-domain plot
+    fig_time = go.Figure()
+    fig_time.add_trace(go.Scatter(x=data['timestamp'], y=data[device_name], mode='lines+markers', name=device_name))
+    st.plotly_chart(fig_time)
+    
+    # Frequency-domain analysis using FFT
+    sampling_rate = 1  # Hz
+    num_samples = len(data)
+    signal = data[device_name].values
+    freq_values = fftfreq(num_samples, d=1/sampling_rate)[:num_samples//2]
+    fft_values = abs(fft(signal))[:num_samples//2]
+    
+    fig_freq = go.Figure()
+    fig_freq.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='FFT Magnitude'))
+    fig_freq.update_layout(title="Frequency Domain Analysis", xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
+    st.plotly_chart(fig_freq)
+    
+    # Additional Motor Current vs Frequency Plot
+    if device_name == "Motor Current":
+        fig_motor = go.Figure()
+        fig_motor.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='Motor Current FFT'))
+        fig_motor.update_layout(title="Motor Current vs Frequency", xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
+        st.plotly_chart(fig_motor)
+    
+    # Data Table
+    st.dataframe(data[['timestamp', device_name]])
+    
+    if st.button("Back to Dashboard"):
+        st.session_state.selected_device = None
+        st.rerun()
+
 if st.session_state.selected_device:
     show_data(st.session_state.selected_device)
 else:
