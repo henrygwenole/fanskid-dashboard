@@ -18,6 +18,7 @@ def generate_live_data(num_records=10000, sampling_rate=1):
         'Driven non Drive End Bearing': np.sin(2 * np.pi * 30 * time_intervals) + np.random.normal(0, 0.5, num_records),
         'Motor non Drive End Bearing': np.sin(2 * np.pi * 40 * time_intervals) + np.random.normal(0, 0.5, num_records),
         'Driving belt alignment': np.sin(2 * np.pi * 50 * time_intervals) + np.random.normal(0, 0.5, num_records),
+        'Motor Current': np.sin(2 * np.pi * 15 * time_intervals) + np.random.normal(0, 0.5, num_records),
     }
     return pd.DataFrame(data)
 
@@ -85,6 +86,12 @@ def show_data(device_name):
     fig_freq.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='FFT Magnitude'))
     fig_freq.update_layout(title="Frequency Domain Analysis", xaxis_title="Frequency (Hz)", yaxis_title="Amplitude")
     st.plotly_chart(fig_freq)
+    
+    # Motor Current Plot
+    fig_motor_current = go.Figure()
+    fig_motor_current.add_trace(go.Scatter(x=freq_values, y=fft_values, mode='lines', name='Motor Current'))
+    fig_motor_current.update_layout(title="Motor Current vs Frequency", xaxis_title="Frequency (Hz)", yaxis_title="Current (A)")
+    st.plotly_chart(fig_motor_current)
     
     # Data Table
     st.dataframe(data[['timestamp', device_name]])
